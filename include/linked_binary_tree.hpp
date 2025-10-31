@@ -5,6 +5,7 @@
 #include <vector>
 #include <queue>
 #include <algorithm>
+#include <stdexcept>
 
 template <typename E>
 class LinkedBinaryTree{
@@ -30,7 +31,9 @@ class LinkedBinaryTree{
             private:
                 // practice writing code yourself and match with slides
                 Node* node; // pointer to the node being wrapped
-                LinkedBinaryTree* tree; // pointer to the tree containing the nod
+                LinkedBinaryTree* tree; // pointer to the tree containing the node
+                friend class LinkedBinaryTree;
+
             public:
                 // Wraps a Node* pointer 
                 //(default is nullptr)
@@ -39,7 +42,7 @@ class LinkedBinaryTree{
                 // operator (based on node pointer)
                 bool operator==(Position other) const{
                     // practice writing code yourself and match with slides
-                    return node == other.node
+                    return node == other.node;
                 }
                 bool operator!=(Position other) const{
                     // practice writing code yourself and match with slides
@@ -68,20 +71,28 @@ class LinkedBinaryTree{
 
                 Position parent() const{
                     // practice writing code yourself and match with slides
+                    if (node == nullptr)
+                        return Position(nullptr);
                     return Position(node->parent);
                 }
                 Position left() const{
                     // practice writing code yourself and match with slides
+                    if (node == nullptr)
+                        return Position(nullptr);
                     return Position(node->left);
                 }
                 Position right() const{
                     // practice writing code yourself and match with slides
+                    if (node == nullptr)
+                        return Position(nullptr);
                     return Position(node->right);
                 }
                 
                 std::vector<Position> children() const{
                     // practice writing code yourself and match with slides
                     std::vector<Position> result;
+                    if (node == nullptr)  
+                        return result;
                     if(node->left != nullptr)
                         result.push_back(Position(node->left));
                     if(node->right != nullptr)
@@ -90,6 +101,8 @@ class LinkedBinaryTree{
                 }
                 int num_children() const{
                     // practice writing code yourself and match with slides
+                    if (node == nullptr)  
+                        return 0;
                     int count = 0;
                     if(node->left != nullptr)
                         count++;
@@ -111,6 +124,13 @@ class LinkedBinaryTree{
             // practice writing code yourself and match with slides
             return Position(rt);
         }
+
+        void preorder_positions(Position p, std::vector<Position>& pos) const {
+            pos.push_back(p);
+            for (Position child : p.children())
+                preorder_positions(child, pos);
+        }
+
         std::vector<Position> positions() const{
             // practice writing code yourself and match with slides
             std::vector<Position> pos;
@@ -126,12 +146,20 @@ class LinkedBinaryTree{
         }
         void add_left(Position p, const E& e){
             // practice writing code yourself and match with slides
+            if (p.node == nullptr)
+                throw std::runtime_error("Cannot add to the null position");
+            if (p.node->left != nullptr)
+                throw std::runtime_error("Left child already exists");
             Node* newNode = new Node(e, p.node);
             p.node->left = newNode;
             sz++;
         }
         void add_right(Position p, const E& e){
             // practice writing code yourself and match with slides
+            if (p.node == nullptr)
+                throw std::runtime_error("Cannot add to the null position");
+            if (p.node->right != nullptr)
+                throw std::runtime_error("Right child already exists");
             Node* newNode = new Node(e, p.node);
             p.node->right = newNode;
             sz++;
@@ -140,15 +168,19 @@ class LinkedBinaryTree{
         void erase(Position p){
             // practice writing code yourself and match with slides
             Node* nd = p.node;
+            
+            if (p.node == nullptr)
+                throw std::runtime_error("Cannot erase null position");
+
             if (nd->left != nullptr || nd->right != nullptr)
                 throw std::runtime_error("Cannot erase node with children");
             
-            Node* par = nd->par;
-            if (par != nullptr) {
-                if (par->left == nd)
-                    par->left = nullptr;
+            Node* parent = nd->parent;
+            if (parent != nullptr) {
+                if (parent->left == nd)
+                    parent->left = nullptr;
                 else
-                    par->right = nullptr;
+                    parent->right = nullptr;
             } else {
                 rt = nullptr;
             }
@@ -159,12 +191,15 @@ class LinkedBinaryTree{
         void attach(Position p, LinkedBinaryTree& left, LinkedBinaryTree& right){
             // practice writing code yourself and match with slides
              Node* nd = p.node;
+
+            if (p.node == nullptr)
+                throw std::runtime_error("Cannot attach to null position");
             if (nd->left != nullptr || nd->right != nullptr)
                 throw std::runtime_error("Position already has children");
             
             nd->left = left.rt;
             if (left.rt != nullptr) {
-                left.rt->par = nd;
+                left.rt->parent = nd;
                 sz += left.sz;
                 left.rt = nullptr;
                 left.sz = 0;
@@ -172,7 +207,7 @@ class LinkedBinaryTree{
             
             nd->right = right.rt;
             if (right.rt != nullptr) {
-                right.rt->par = nd;
+                right.rt->parent = nd;
                 sz += right.sz;
                 right.rt = nullptr;
                 right.sz = 0;
@@ -192,9 +227,13 @@ class LinkedBinaryTree{
             // practice writing code yourself and match with slides
             if (model == nullptr)
                 return nullptr;
-            Node* copy = new Node(model->elem);
+            Node* copy = new Node(model->element);
             copy->left = clone(model->left);
+            if (copy->left != nullptr)
+                copy->left->parent = copy;  
             copy->right = clone(model->right);
+            if (copy->right != nullptr)
+                copy->right->parent = copy;  
             return copy;
         }
 
